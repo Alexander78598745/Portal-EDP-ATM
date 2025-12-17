@@ -215,9 +215,15 @@ class AuthManager {
         const user = users.find(u => u.password === password && u.active);
 
         if (user) {
-            // Actualizar último acceso
-            user.lastAccess = new Date().toISOString();
-            this.updateUser(user);
+            // Actualizar último acceso de forma simple y confiable
+            const updatedUser = {
+                ...user,
+                lastAccess: new Date().toISOString()
+            };
+            
+            // Guardar directamente en localStorage (sin depender de updateUser)
+            const updatedUsers = users.map(u => u.id === user.id ? updatedUser : u);
+            localStorage.setItem('atm_users', JSON.stringify(updatedUsers));
             
             // Log de acceso
             console.log(`🔐 Usuario autenticado: ${user.name} (${user.role})`);
@@ -228,7 +234,7 @@ class AuthManager {
                 role: user.role,
                 email: user.email,
                 specialty: user.specialty,
-                lastAccess: user.lastAccess
+                lastAccess: updatedUser.lastAccess
             };
         }
 
