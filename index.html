@@ -10,6 +10,13 @@
     <link rel="stylesheet" href="styles/main.css">
     <link rel="icon" type="image/png" href="favicon.ico">
     
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#CE1126">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Portal ATM">
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
@@ -109,7 +116,7 @@
                     <div class="form-group">
                         <label class="form-label">Duración (minutos) *</label>
                         <input type="number" class="form-input" id="sessionDuration" required 
-                               min="15" max="180" placeholder="60">
+                               min="5" max="180" placeholder="60">
                     </div>
                 </div>
 
@@ -127,9 +134,16 @@
 
                 <div class="form-group">
                     <label class="form-label">Descripción de la Tarea *</label>
-                    <textarea class="form-textarea" id="taskDescription" required 
-                              placeholder="Describe detalladamente la tarea de entrenamiento..."
-                              rows="6"></textarea>
+                    <div class="task-description-builder">
+                        <div class="description-list" id="descriptionList">
+                            <ul id="descriptionItems" class="description-items"></ul>
+                        </div>
+                        <div class="description-input">
+                            <input type="text" class="form-input" id="taskDescription" 
+                                   placeholder="Escribe una acción de entrenamiento..." maxlength="200">
+                            <button type="button" class="btn btn-add" id="addDescriptionItem">+</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -202,7 +216,7 @@
 
                     <div class="description-section">
                         <h3>📋 Descripción de la Tarea</h3>
-                        <p id="viewTaskDescription" class="description-text"></p>
+                        <div id="viewTaskDescription" class="description-text"></div>
                     </div>
 
                     <div class="materials-section" id="viewMaterials" style="display: none;">
@@ -311,6 +325,21 @@
             
             app.init();
         });
+    </script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registrado exitosamente:', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker falló:', error);
+                    });
+            });
+        }
     </script>
 </body>
 </html>

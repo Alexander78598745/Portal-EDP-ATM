@@ -212,7 +212,8 @@ class TrainingPortalApp {
         document.getElementById('viewSessionCreator').textContent = session.creatorName;
         document.getElementById('viewSessionDate').textContent = new Date(session.createdAt).toLocaleDateString('es-ES');
         document.getElementById('viewMainObjective').textContent = session.mainObjective;
-        document.getElementById('viewTaskDescription').textContent = session.description;
+        // Mostrar descripción de la tarea como lista numerada
+        this.displayTaskDescriptionAsList(session.description);
 
         // Objetivos secundarios
         if (session.secondaryObjectives && session.secondaryObjectives.length > 0) {
@@ -254,6 +255,32 @@ class TrainingPortalApp {
         document.getElementById('viewSessionModal').classList.add('show');
     }
 
+    displayTaskDescriptionAsList(descriptionText) {
+        const descriptionElement = document.getElementById('viewTaskDescription');
+        
+        if (!descriptionText || descriptionText.trim() === '') {
+            descriptionElement.innerHTML = '<p style="color: #999; font-style: italic;">No hay descripción de la tarea</p>';
+            return;
+        }
+        
+        // Dividir en líneas y filtrar elementos vacíos
+        const lines = descriptionText.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+        
+        if (lines.length === 0) {
+            descriptionElement.innerHTML = '<p style="color: #999; font-style: italic;">No hay descripción de la tarea</p>';
+            return;
+        }
+        
+        // Crear lista numerada
+        const listHtml = lines.map((line, index) => 
+            `<li><strong>${index + 1}.</strong> ${escapeHtml(line)}</li>`
+        ).join('');
+        
+        descriptionElement.innerHTML = `<ol class="view-description-list">${listHtml}</ol>`;
+    }
+
     showCreateSession() {
         this.currentEditingSession = null;
         document.getElementById('modalTitle').textContent = 'Crear Nueva Sesión';
@@ -287,7 +314,7 @@ class TrainingPortalApp {
         document.getElementById('mainObjective').value = session.mainObjective;
         document.getElementById('secondaryObjectives').value = 
             session.secondaryObjectives ? session.secondaryObjectives.join(', ') : '';
-        document.getElementById('taskDescription').value = session.description;
+        loadDescriptionItems(session.description);
         document.getElementById('materials').value = session.materials || '';
         
         // Cargar imagen si existe
@@ -318,10 +345,13 @@ class TrainingPortalApp {
             secondaryObjectives: this.parseSecondaryObjectives(
                 document.getElementById('secondaryObjectives').value
             ),
-            description: document.getElementById('taskDescription').value,
+            description: document.getElementById('taskDescriptionHidden').value,
             materials: document.getElementById('materials').value,
             imageData: getCurrentImage() !== null ? getCurrentImage() : null // Obtener imagen local
         };
+
+        console.log('📝 Descripción guardada:', sessionData.description);
+        console.log('📝 Campo oculto taskDescriptionHidden:', document.getElementById('taskDescriptionHidden').value);
 
         console.log('📋 Datos de la sesión:', sessionData);
         console.log('🖼️ getCurrentImage():', getCurrentImage() ? 'Imagen presente' : 'Sin imagen');
@@ -352,7 +382,9 @@ class TrainingPortalApp {
             return;
         }
         
-        if (!sessionData.description || sessionData.description.trim() === '') {
+        const hiddenField = document.getElementById('taskDescriptionHidden');
+        const descriptionText = hiddenField ? hiddenField.value : '';
+        if (!descriptionText || descriptionText.trim() === '') {
             alert('La descripción de la tarea es obligatoria');
             document.getElementById('taskDescription').focus();
             return;
@@ -586,6 +618,10 @@ class TrainingPortalApp {
             form.reset();
         }
         
+        // Limpiar sistema de descripción completamente
+        descriptionItems = [];
+        renderDescriptionList();
+        
         // Limpiar imagen
         if (typeof currentImageData !== 'undefined') {
             currentImageData = null;
@@ -809,3 +845,162 @@ function closeViewSessionModal() {
         modal.classList.remove('show');
     }
 }
+
+// ==========================================================================
+// Sistema de Descripción de Tareas
+// ==========================================================================
+
+let descriptionItems = [];
+
+// Inicializar el sistema de descripción cuando se carga la página
+function initDescriptionBuilder() {
+    const addButton = document.getElementById('addDescriptionItem');
+    const inputField = document.getElementById('taskDescription');
+    
+    if (addButton && inputField) {
+        // Event listeners
+        addButton.addEventListener('click', addDescriptionItem);
+        inputField.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addDescriptionItem();
+            }
+        });
+        
+        // SIEMPRE limpiar lista al inicio - SIN contenido predeterminado
+        descriptionItems = [];
+        renderDescriptionList();
+    }
+}
+
+function addDescriptionItem() {
+    const inputField = document.getElementById('taskDescription');
+    const addButton = document.getElementById('addDescriptionItem');
+    
+    if (!inputField || !addButton) return;
+    
+    const text = inputField.value.trim();
+    
+    if (text === '') {
+        inputField.focus();
+        return;
+    }
+    
+    if (text.length > 200) {
+        alert('El texto no puede exceder 200 caracteres');
+        return;
+    }
+    
+    // Añadir a la lista
+    descriptionItems.push(text);
+    
+    // Limpiar campo y re-renderizar
+    inputField.value = '';
+    renderDescriptionList();
+    
+    // Enfocar el campo para continuar
+    inputField.focus();
+}
+
+function renderDescriptionList() {
+    const listContainer = document.getElementById('descriptionItems');
+    if (!listContainer) return;
+    
+    // Limpiar lista actual completamente
+    listContainer.innerHTML = '';
+    
+    // Renderizar cada item con funcionalidad de edición (SIN numeración - solo texto)
+    descriptionItems.forEach((item, index) => {
+        const listItem = document.createElement('li');
+        listItem.className = 'description-item';
+        
+        // Texto editable
+        const textSpan = document.createElement('span');
+        textSpan.className = 'description-item-text';
+        textSpan.textContent = item;
+        textSpan.onclick = function() {
+            editDescriptionItem(index);
+        };
+        
+        // Botón eliminar
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-item-btn';
+        deleteBtn.innerHTML = '×';
+        deleteBtn.onclick = function(e) {
+            e.stopPropagation();
+            deleteDescriptionItem(index);
+        };
+        
+        listItem.appendChild(textSpan);
+        listItem.appendChild(deleteBtn);
+        
+        listContainer.appendChild(listItem);
+    });
+    
+    // Actualizar el campo oculto para el formulario
+    updateTaskDescriptionField();
+}
+
+function updateTaskDescriptionField() {
+    // Crear un campo oculto para la validación si no existe
+    let hiddenField = document.getElementById('taskDescriptionHidden');
+    if (!hiddenField) {
+        hiddenField = document.createElement('input');
+        hiddenField.type = 'hidden';
+        hiddenField.id = 'taskDescriptionHidden';
+        hiddenField.name = 'taskDescriptionHidden';
+        document.getElementById('sessionForm').appendChild(hiddenField);
+    }
+    
+    // Unir todos los items con saltos de línea para compatibilidad
+    hiddenField.value = descriptionItems.join('\n');
+    
+    console.log('📝 Campo oculto actualizado con:', descriptionItems);
+    console.log('📝 Valor del campo oculto:', hiddenField.value);
+}
+
+function loadDescriptionItems(description) {
+    // SIEMPRE empezar con lista limpia
+    descriptionItems = [];
+    
+    if (description && description.trim() !== '') {
+        // Dividir por saltos de línea y filtrar elementos vacíos
+        const lines = description.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+        
+        // Verificar que no haya duplicados antes de cargar
+        descriptionItems = [...new Set(lines)];
+    }
+    
+    renderDescriptionList();
+}
+
+function editDescriptionItem(index) {
+    const currentText = descriptionItems[index];
+    const newText = prompt('Editar descripción del ítem:', currentText);
+    
+    if (newText !== null && newText.trim() !== '') {
+        descriptionItems[index] = newText.trim();
+        renderDescriptionList();
+    }
+}
+
+function deleteDescriptionItem(index) {
+    if (confirm('¿Eliminar este ítem?')) {
+        descriptionItems.splice(index, 1);
+        renderDescriptionList();
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Inicializar cuando se carga el DOM
+document.addEventListener('DOMContentLoaded', function() {
+    // Pequeño delay para asegurar que los elementos estén disponibles
+    setTimeout(initDescriptionBuilder, 100);
+});

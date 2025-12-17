@@ -1647,3 +1647,192 @@ small { font-size: 14px; color: var(--neutral-text); }
 .search-input-modern::placeholder {
   color: var(--neutral-text-light);
 }
+/* ==========================================================================
+   Sistema de Descripción de Tareas
+   ========================================================================== */
+
+.task-description-builder {
+  border: 2px solid var(--neutral-border);
+  border-radius: var(--radius-md);
+  background: var(--neutral-white);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.task-description-builder:focus-within {
+  border-color: var(--primary-red);
+  box-shadow: 0 0 0 3px rgba(206, 17, 38, 0.1);
+}
+
+.description-list {
+  min-height: 120px;
+  padding: var(--space-md);
+  background: var(--neutral-light);
+  border-bottom: 1px solid var(--neutral-border);
+}
+
+.description-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.description-items li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--neutral-border);
+  transition: background-color var(--transition-fast);
+}
+
+.description-items li:last-child {
+  border-bottom: none;
+}
+
+.description-items li:hover {
+  background: rgba(206, 17, 38, 0.05);
+}
+
+/* .description-item-number {
+  background: var(--primary-red);
+  color: var(--neutral-white);
+  font-weight: var(--font-weight-bold);
+  font-size: 14px;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+} */
+
+.description-item-text {
+  flex: 1;
+  color: var(--base-blue);
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.description-input {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--neutral-white);
+}
+
+.description-input .form-input {
+  flex: 1;
+  margin: 0;
+  border: none;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+.description-input .form-input:focus {
+  box-shadow: none;
+  border: 2px solid var(--neutral-border);
+}
+
+.description-input .form-input:hover {
+  border-color: var(--base-blue-light);
+}
+
+.btn-add {
+  background: var(--primary-red);
+  color: var(--neutral-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  width: 48px;
+  height: 48px;
+  font-size: 24px;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-normal);
+  flex-shrink: 0;
+}
+
+.btn-add:hover {
+  background: var(--primary-red-hover);
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-add:active {
+  transform: scale(0.95);
+}
+
+.btn-add:disabled {
+  background: var(--neutral-border);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Estilos para elementos editables */
+.description-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.description-item-text {
+  flex: 1;
+  cursor: pointer;
+  padding: var(--space-xs);
+  border-radius: var(--radius-xs);
+  transition: background-color var(--transition-fast);
+}
+
+.description-item-text:hover {
+  background: rgba(206, 17, 38, 0.1);
+}
+
+.delete-item-btn {
+  background: var(--neutral-border);
+  color: var(--neutral-text);
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  opacity: 0.7;
+}
+
+.delete-item-btn:hover {
+  background: var(--danger-red);
+  color: white;
+  opacity: 1;
+}
+
+/* Estilos para vista de descripción de tarea */
+.view-description-list {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.6;
+}
+
+.view-description-list li {
+  margin-bottom: var(--space-sm);
+  padding-left: var(--space-xs);
+}
+
+.view-description-list li strong {
+  color: var(--primary-red);
+  font-weight: var(--font-weight-bold);
+  margin-right: var(--space-xs);
+}
+
+.view-description-list li:last-child {
+  margin-bottom: 0;
+}
