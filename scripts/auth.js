@@ -64,13 +64,22 @@ class AuthManager {
         if (!this.firebaseReady) return;
         
         try {
+            // Leer usuarios de Firebase
+            const usersSnapshot = await this.db.ref('users').once('value');
+            const firebaseUsers = usersSnapshot.val() || [];
+            
+            if (firebaseUsers.length > 0) {
+                localStorage.setItem('atm_users', JSON.stringify(firebaseUsers));
+                console.log('✅ Usuarios sincronizados desde Firebase (online)');
+            }
+            
             // Leer sesiones de Firebase
             const sessionsSnapshot = await this.db.ref('sessions').once('value');
             const firebaseSessions = sessionsSnapshot.val() || [];
             
             if (firebaseSessions.length > 0) {
                 localStorage.setItem('atm_sessions', JSON.stringify(firebaseSessions));
-                console.log('✅ Datos sincronizados desde Firebase (online)');
+                console.log('✅ Sesiones sincronizadas desde Firebase (online)');
             }
         } catch (error) {
             console.log('ℹ️ Error sincronizando desde Firebase:', error.message);
@@ -80,11 +89,21 @@ class AuthManager {
     setupFirebaseListeners() {
         if (!this.firebaseReady) return;
         
+        // Listener para usuarios (para login multidispositivo)
+        this.db.ref('users').on('value', (snapshot) => {
+            const firebaseUsers = snapshot.val() || [];
+            if (firebaseUsers.length > 0) {
+                localStorage.setItem('atm_users', JSON.stringify(firebaseUsers));
+                console.log('🔄 Usuarios actualizados desde otro dispositivo (online)');
+            }
+        });
+        
+        // Listener para sesiones
         this.db.ref('sessions').on('value', (snapshot) => {
             const firebaseSessions = snapshot.val() || [];
             if (firebaseSessions.length > 0) {
                 localStorage.setItem('atm_sessions', JSON.stringify(firebaseSessions));
-                console.log('🔄 Datos actualizados desde otro dispositivo (online)');
+                console.log('🔄 Sesiones actualizadas desde otro dispositivo (online)');
                 
                 // Disparar evento para actualizar interfaz
                 window.dispatchEvent(new CustomEvent('atmDataUpdated'));
@@ -132,7 +151,11 @@ class AuthManager {
         ];
         
         localStorage.setItem('atm_users', JSON.stringify(defaultUsers));
-        console.log('✅ Usuarios por defecto creados');
+        
+        // Sincronizar usuarios por defecto con Firebase
+        this.saveToFirebase('users', defaultUsers);
+        
+        console.log('✅ Usuarios por defecto creados y sincronizados online');
     }
 
     createDefaultSessions() {
@@ -308,7 +331,10 @@ class AuthManager {
         users.push(newUser);
         localStorage.setItem('atm_users', JSON.stringify(users));
         
-        console.log(`✅ Usuario creado: ${newUser.name} (${newUser.role})`);
+        // Sincronizar usuarios con Firebase para acceso multidispositivo
+        this.saveToFirebase('users', users);
+        
+        console.log(`✅ Usuario creado y sincronizado online: ${newUser.name} (${newUser.role})`);
         return newUser;
     }
 
@@ -319,6 +345,10 @@ class AuthManager {
         if (index !== -1) {
             users[index] = { ...users[index], ...updatedUser };
             localStorage.setItem('atm_users', JSON.stringify(users));
+            
+            // Sincronizar usuarios con Firebase para acceso multidispositivo
+            this.saveToFirebase('users', users);
+            
             return true;
         }
         
@@ -333,6 +363,10 @@ class AuthManager {
             const user = users[userIndex];
             users.splice(userIndex, 1);
             localStorage.setItem('atm_users', JSON.stringify(users));
+            
+            // Sincronizar usuarios con Firebase para acceso multidispositivo
+            this.saveToFirebase('users', users);
+            
             console.log(`🗑️ Usuario eliminado: ${user.name}`);
             return true;
         }
