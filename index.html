@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Entrenamiento - Atlético de Madrid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="icon" type="image/png" href="favicon.ico">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo-section">
+                <img src="images/escudo_atletico.png" alt="Escudo Atlético de Madrid" class="club-logo">
+                <h1 class="club-title">Portal de Entrenamiento de Porteros</h1>
+            </div>
+            <nav class="header-nav">
+                <button class="btn btn-primary" onclick="showCreateSession()">
+                    <span class="btn-icon">+</span>
+                    Crear Sesión
+                </button>
+                <div class="user-menu">
+                    <span class="user-name" id="userDisplayName">Usuario</span>
+                    <button class="btn btn-secondary" onclick="showAdmin()">
+                        Admin Panel
+                    </button>
+                    <button class="btn btn-secondary" onclick="logout()">Salir</button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Sesiones de Entrenamiento</h1>
+            <p class="hero-subtitle">Portal colaborativo para entrenadores de porteros del Atlético de Madrid</p>
+            
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Buscar sesiones por título o descripción..." 
+                       class="search-input" oninput="filterSessions()">
+                <select id="difficultyFilter" class="filter-select" onchange="filterSessions()">
+                    <option value="">Todas las dificultades</option>
+                    <option value="Principiante">Principiante</option>
+                    <option value="Intermedio">Intermedio</option>
+                    <option value="Avanzado">Avanzado</option>
+                </select>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sessions Grid -->
+    <main class="main-content">
+        <div class="container">
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <span class="stat-number" id="totalSessions">0</span>
+                    <span class="stat-label">Sesiones Totales</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="totalUsers">0</span>
+                    <span class="stat-label">Entrenadores</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="mySessions">0</span>
+                    <span class="stat-label">Mis Sesiones</span>
+                </div>
+            </div>
+
+            <div class="sessions-grid" id="sessionsGrid">
+                <!-- Las sesiones se cargarán aquí dinámicamente -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para Crear/Editar Sesión -->
+    <div class="modal" id="sessionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Crear Nueva Sesión</h2>
+                <button class="modal-close" onclick="closeSessionModal()">&times;</button>
+            </div>
+            
+            <form class="session-form" id="sessionForm" onsubmit="saveSession(event)">
+                <div class="form-group">
+                    <label class="form-label">Título de la Sesión *</label>
+                    <input type="text" class="form-input" id="sessionTitle" required 
+                           placeholder="Ej: Técnica de Salidas en Centro del Campo">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Dificultad *</label>
+                        <select class="form-select" id="sessionDifficulty" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="Principiante">Principiante</option>
+                            <option value="Intermedio">Intermedio</option>
+                            <option value="Avanzado">Avanzado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Duración (minutos) *</label>
+                        <input type="number" class="form-input" id="sessionDuration" required 
+                               min="15" max="180" placeholder="60">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Objetivo Principal *</label>
+                    <input type="text" class="form-input" id="mainObjective" required 
+                           placeholder="Ej: Mejorar coordinación en salidas">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Objetivos Secundarios (separados por comas)</label>
+                    <textarea class="form-textarea" id="secondaryObjectives" 
+                              placeholder="Ej: Reflejos, lectura de juego, comunicación"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Descripción de la Tarea *</label>
+                    <textarea class="form-textarea" id="taskDescription" required 
+                              placeholder="Describe detalladamente la tarea de entrenamiento..."
+                              rows="6"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Material Necesario</label>
+                    <input type="text" class="form-input" id="materials" 
+                           placeholder="Ej: Conos, balones, portería móvil">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Imagen Demostrativa</label>
+                    <div class="image-upload-container">
+                        <input type="file" class="form-input" id="imageFile" accept="image/*" onchange="handleImageUpload(event)">
+                        <div class="image-preview" id="imagePreview" style="display: none;">
+                            <img id="previewImage" class="preview-img" alt="Vista previa">
+                            <button type="button" class="remove-image" onclick="removeImage()">×</button>
+                        </div>
+                    </div>
+                    <small class="form-help">Sube una imagen desde tu dispositivo (móvil u ordenador)</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSessionModal()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-icon">💾</span>
+                        <span id="saveButtonText">Crear Sesión</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Ver Sesión Detallada -->
+    <div class="modal" id="viewSessionModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 class="modal-title" id="viewSessionTitle">Título de la Sesión</h2>
+                <button class="modal-close" onclick="closeViewSessionModal()">&times;</button>
+            </div>
+            
+            <div class="session-details">
+                <div class="view-session-image-container">
+                    <img id="viewSessionImage" class="view-session-image" alt="Imagen de la sesión" onclick="app.expandImage(this.src)">
+                    <div class="view-session-badges">
+                        <span class="badge badge-difficulty" id="viewSessionDifficulty"></span>
+                        <span class="badge badge-duration" id="viewSessionDuration"></span>
+                    </div>
+                </div>
+                
+                <div class="session-info">
+                    <div class="session-meta">
+                        <span class="meta-item">
+                            <strong>👤 Creador:</strong> <span id="viewSessionCreator"></span>
+                        </span>
+                        <span class="meta-item">
+                            <strong>📅 Fecha:</strong> <span id="viewSessionDate"></span>
+                        </span>
+                    </div>
+
+                    <div class="objectives-section">
+                        <h3>🎯 Objetivo Principal</h3>
+                        <p id="viewMainObjective" class="objective-text"></p>
+                    </div>
+
+                    <div class="objectives-section" id="viewSecondaryObjectives" style="display: none;">
+                        <h3>🎯 Objetivos Secundarios</h3>
+                        <ul id="viewSecondaryList"></ul>
+                    </div>
+
+                    <div class="description-section">
+                        <h3>📋 Descripción de la Tarea</h3>
+                        <p id="viewTaskDescription" class="description-text"></p>
+                    </div>
+
+                    <div class="materials-section" id="viewMaterials" style="display: none;">
+                        <h3>⚽ Material Necesario</h3>
+                        <p id="viewMaterialsText"></p>
+                    </div>
+
+                    <div class="session-actions">
+                        <button class="btn btn-secondary" id="editCurrentSession">
+                            ✏️ Editar Sesión
+                        </button>
+                        <button class="btn btn-danger" id="deleteSessionButton" style="display: none;">
+                            🗑️ Eliminar Sesión
+                        </button>
+                        <button class="btn btn-secondary" onclick="closeViewSessionModal()">
+                            ❌ Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Cargando...</p>
+        </div>
+    </div>
+
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/app.js"></script>
+    <script>
+        // Variables globales para imagen
+        let currentImageData = null;
+
+        // Función para manejar la subida de imagen
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentImageData = e.target.result;
+                    showImagePreview(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Función para mostrar vista previa de la imagen
+        function showImagePreview(imageSrc) {
+            const preview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImage');
+            
+            previewImg.src = imageSrc;
+            preview.style.display = 'block';
+        }
+
+        // Función para remover imagen
+        function removeImage() {
+            currentImageData = null;
+            document.getElementById('imageFile').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+        }
+
+        // Función para obtener la imagen actual (utilizada en app.js)
+        function getCurrentImage() {
+            return currentImageData || null;
+        }
+
+        // Función para expandir imagen (disponible globalmente)
+        function expandImage(imageSrc) {
+            if (!imageSrc) {
+                console.log('⚠️ No hay imagen para expandir');
+                return;
+            }
+            
+            const modal = document.getElementById('imageExpandedModal');
+            const img = document.getElementById('expandedImage');
+            
+            if (modal && img) {
+                img.src = imageSrc;
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden'; // Prevenir scroll del body
+                console.log('🖼️ Imagen expandida mostrada');
+            }
+        }
+        
+        // Función para cerrar imagen expandida
+        function closeImageExpanded() {
+            const modal = document.getElementById('imageExpandedModal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Restaurar scroll
+                console.log('🖼️ Imagen expandida cerrada');
+            }
+        }
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!auth.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            app.init();
+        });
+    </script>
+</body>
+</html>

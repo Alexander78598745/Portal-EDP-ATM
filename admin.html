@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Atlético de Madrid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="icon" type="image/png" href="favicon.ico">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header admin-header">
+        <div class="header-container">
+            <div class="logo-section">
+                <img src="images/escudo_atletico.png" alt="Escudo Atlético de Madrid" class="club-logo">
+                <h1 class="club-title">Panel de Administración</h1>
+            </div>
+            <nav class="header-nav">
+                <button class="btn btn-secondary" onclick="window.location.href='index.html'">
+                    ← Volver al Portal
+                </button>
+                <span class="admin-badge">ADMIN</span>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Admin Content -->
+    <main class="admin-content">
+        <div class="container">
+            <!-- Admin Stats -->
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <span class="stat-number" id="adminTotalUsers">0</span>
+                    <span class="stat-label">Total Usuarios</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="adminTotalSessions">0</span>
+                    <span class="stat-label">Total Sesiones</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="adminTodaySessions">0</span>
+                    <span class="stat-label">Sesiones Hoy</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="adminActiveUsers">0</span>
+                    <span class="stat-label">Usuarios Activos</span>
+                </div>
+            </div>
+
+            <!-- Admin Tabs -->
+            <div class="admin-tabs">
+                <button class="tab-button active" onclick="showTab('users')">
+                    👥 Gestionar Usuarios
+                </button>
+                <button class="tab-button" onclick="showTab('sessions')">
+                    📋 Gestionar Sesiones
+                </button>
+                <button class="tab-button" onclick="showTab('settings')">
+                    ⚙️ Configuración
+                </button>
+            </div>
+
+            <!-- Users Management Tab -->
+            <div class="tab-content active" id="usersTab">
+                <div class="admin-section">
+                    <div class="section-header">
+                        <h2>Gestión de Usuarios</h2>
+                        <button class="btn btn-primary" onclick="showAddUserModal()">
+                            ➕ Añadir Usuario
+                        </button>
+                    </div>
+
+                    <div class="users-list" id="usersList">
+                        <!-- Los usuarios se cargarán aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sessions Management Tab -->
+            <div class="tab-content" id="sessionsTab">
+                <div class="admin-section">
+                    <div class="section-header">
+                        <h2>Gestión de Sesiones</h2>
+                        <div class="session-filters-modern">
+                            <div class="filter-group">
+                                <select id="adminSessionFilter" onchange="filterAdminSessions()" class="filter-select">
+                                    <option value="">📅 Todas las sesiones</option>
+                                    <option value="today">📆 De hoy</option>
+                                    <option value="thisWeek">📊 Esta semana</option>
+                                    <option value="byUser">👥 Por usuario</option>
+                                </select>
+                            </div>
+                            <div class="search-group">
+                                <input type="text" id="adminSessionSearch" placeholder="🔍 Buscar sesiones..." 
+                                       oninput="filterAdminSessions()" class="search-input-modern">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sessions-admin-list" id="sessionsAdminList">
+                        <!-- Las sesiones se cargarán aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-content" id="settingsTab">
+                <div class="admin-section">
+                    <h2>Configuración del Sistema</h2>
+                    
+                    <div class="settings-group">
+                        <h3>🛠️ Herramientas de Desarrollo</h3>
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="devModeToggle" onchange="toggleDevMode()">
+                                <span class="checkmark"></span>
+                                Modo de Desarrollo (mostrar contraseñas de prueba)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>📊 Acciones del Sistema</h3>
+                        <div class="setting-actions">
+                            <button class="btn btn-warning" onclick="exportData()">
+                                📤 Exportar Datos
+                            </button>
+                            <button class="btn btn-secondary" onclick="importData()">
+                                📥 Importar Datos
+                            </button>
+                            <button class="btn btn-danger" onclick="clearAllData()">
+                                🗑️ Limpiar Todo
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>ℹ️ Información del Sistema</h3>
+                        <div class="system-info">
+                            <p><strong>Versión:</strong> 1.0.0</p>
+                            <p><strong>Última actualización:</strong> <span id="lastUpdate"></span></p>
+                            <p><strong>Base de datos:</strong> Local Storage</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add User Modal -->
+    <div class="modal" id="addUserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Añadir Nuevo Usuario</h2>
+                <button class="modal-close" onclick="closeAddUserModal()">&times;</button>
+            </div>
+            
+            <form class="user-form" id="addUserForm" onsubmit="addUser(event)">
+                <div class="form-group">
+                    <label class="form-label">Nombre Completo *</label>
+                    <input type="text" class="form-input" id="userName" required 
+                           placeholder="Ej: Juan García">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Categoría Principal que Entrena *</label>
+                    <select class="form-select" id="userCategory" required>
+                        <option value="">Seleccionar categoría...</option>
+                        <option value="PREBENJAMÍN">PREBENJAMÍN</option>
+                        <option value="BENJAMÍN">BENJAMÍN</option>
+                        <option value="ALEVÍN F7">ALEVÍN F7</option>
+                        <option value="ALEVÍN F11">ALEVÍN F11</option>
+                        <option value="INFANTIL">INFANTIL</option>
+                        <option value="CADETE">CADETE</option>
+                        <option value="JUVENIL">JUVENIL</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Contraseña de Acceso *</label>
+                    <div class="password-input-container">
+                        <input type="text" class="form-input" id="userPassword" required 
+                               placeholder="Contraseña para acceder al portal">
+                        <button type="button" class="generate-password" onclick="generatePassword()">
+                            🎲 Generar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Rol del Usuario *</label>
+                    <select class="form-select" id="userRole" required>
+                        <option value="">Seleccionar rol...</option>
+                        <option value="trainer">Entrenador</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email (opcional)</label>
+                    <input type="email" class="form-input" id="userEmail" 
+                           placeholder="usuario@clubatletico.com">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Especialidad (opcional)</label>
+                    <input type="text" class="form-input" id="userSpecialty" 
+                           placeholder="Ej: Entrenador de Porteros">
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        ➕ Crear Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal" id="editUserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Editar Usuario</h2>
+                <button class="modal-close" onclick="closeEditUserModal()">&times;</button>
+            </div>
+            
+            <form class="user-form" id="editUserForm" onsubmit="updateUser(event)">
+                <input type="hidden" id="editUserId" value="">
+                
+                <div class="form-group">
+                    <label class="form-label">Nombre Completo *</label>
+                    <input type="text" class="form-input" id="editUserName" required 
+                           placeholder="Ej: Juan García">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Categoría Principal que Entrena *</label>
+                    <select class="form-select" id="editUserCategory" required>
+                        <option value="">Seleccionar categoría...</option>
+                        <option value="PREBENJAMÍN">PREBENJAMÍN</option>
+                        <option value="BENJAMÍN">BENJAMÍN</option>
+                        <option value="ALEVÍN F7">ALEVÍN F7</option>
+                        <option value="ALEVÍN F11">ALEVÍN F11</option>
+                        <option value="INFANTIL">INFANTIL</option>
+                        <option value="CADETE">CADETE</option>
+                        <option value="JUVENIL">JUVENIL</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Contraseña de Acceso *</label>
+                    <div class="password-input-container">
+                        <input type="text" class="form-input" id="editUserPassword" required 
+                               placeholder="Contraseña para acceder al portal">
+                        <button type="button" class="generate-password" onclick="generateEditPassword()">
+                            🎲 Generar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Rol del Usuario *</label>
+                    <select class="form-select" id="editUserRole" required>
+                        <option value="">Seleccionar rol...</option>
+                        <option value="trainer">Entrenador</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email (opcional)</label>
+                    <input type="email" class="form-input" id="editUserEmail" 
+                           placeholder="usuario@clubatletico.com">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Especialidad (opcional)</label>
+                    <input type="text" class="form-input" id="editUserSpecialty" 
+                           placeholder="Ej: Entrenador de Porteros">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Estado del Usuario</label>
+                    <select class="form-select" id="editUserStatus">
+                        <option value="true">Activo</option>
+                        <option value="false">Inactivo</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        ✏️ Actualizar Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="confirmTitle">Confirmar Acción</h2>
+                <button class="modal-close" onclick="closeConfirmModal()">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeConfirmModal()">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmButton">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Ver Sesión -->
+    <div class="modal" id="viewSessionModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 class="modal-title" id="viewSessionTitle">Título de la Sesión</h2>
+                <button class="modal-close" onclick="closeViewSessionModal()">&times;</button>
+            </div>
+            
+            <div class="session-details">
+                <div class="view-session-image-container">
+                    <img id="viewSessionImage" class="view-session-image" alt="Imagen de la sesión" onclick="admin.expandImage(this.src)">
+                    <div class="view-session-badges">
+                        <span class="badge badge-difficulty" id="viewSessionDifficulty"></span>
+                        <span class="badge badge-duration" id="viewSessionDuration"></span>
+                    </div>
+                </div>
+                
+                <div class="session-info">
+                    <div class="session-meta">
+                        <span class="meta-item">
+                            <strong>👤 Creador:</strong> <span id="viewSessionCreator"></span>
+                        </span>
+                        <span class="meta-item">
+                            <strong>📅 Fecha:</strong> <span id="viewSessionDate"></span>
+                        </span>
+                    </div>
+
+                    <div class="objectives-section">
+                        <h3>🎯 Objetivo Principal</h3>
+                        <p id="viewMainObjective" class="objective-text"></p>
+                    </div>
+
+                    <div class="objectives-section" id="viewSecondaryObjectives" style="display: none;">
+                        <h3>🎯 Objetivos Secundarios</h3>
+                        <ul id="viewSecondaryList"></ul>
+                    </div>
+
+                    <div class="description-section">
+                        <h3>📋 Descripción de la Tarea</h3>
+                        <p id="viewTaskDescription" class="description-text"></p>
+                    </div>
+
+                    <div class="materials-section" id="viewMaterials" style="display: none;">
+                        <h3>⚽ Material Necesario</h3>
+                        <p id="viewMaterialsText"></p>
+                    </div>
+
+                    <div class="session-actions">
+                        <button class="btn btn-secondary" id="editCurrentSession" style="display: none;">
+                            ✏️ Editar Sesión
+                        </button>
+                        <button class="btn btn-danger" id="deleteSessionButton" style="display: none;">
+                            🗑️ Eliminar Sesión
+                        </button>
+                        <button class="btn btn-secondary" onclick="closeViewSessionModal()">
+                            ❌ Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Sesión -->
+    <div class="modal" id="editSessionModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 class="modal-title">Editar Sesión</h2>
+                <button class="modal-close" onclick="closeEditSessionModal()">&times;</button>
+            </div>
+            
+            <form class="session-form" id="editSessionForm" onsubmit="saveEditedSession(event)">
+                <input type="hidden" id="editSessionId" value="">
+                
+                <div class="form-group">
+                    <label class="form-label">Título de la Sesión *</label>
+                    <input type="text" class="form-input" id="editSessionTitle" required 
+                           placeholder="Ej: Entrenamiento de reflejos">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Dificultad *</label>
+                        <select class="form-select" id="editSessionDifficulty" required>
+                            <option value="">Seleccionar dificultad...</option>
+                            <option value="Fácil">Fácil</option>
+                            <option value="Media">Media</option>
+                            <option value="Difícil">Difícil</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Duración (minutos) *</label>
+                        <input type="number" class="form-input" id="editSessionDuration" required 
+                               placeholder="30" min="5" max="180">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Objetivo Principal *</label>
+                    <textarea class="form-input" id="editMainObjective" required 
+                              placeholder="Mejorar los reflejos y agilidad del portero" rows="2"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Objetivos Secundarios</label>
+                    <textarea class="form-input" id="editSecondaryObjectives" 
+                              placeholder="Separar con comas: Mejorar timing, Fortalecer piernas" rows="2"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Descripción de la Tarea *</label>
+                    <textarea class="form-input" id="editTaskDescription" required 
+                              placeholder="Descripción detallada del entrenamiento..." rows="4"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Material Necesario</label>
+                    <textarea class="form-input" id="editMaterials" 
+                              placeholder="Conos, balones, palos..." rows="2"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Imagen de la Sesión</label>
+                    <div class="image-upload-container">
+                        <input type="file" id="editImageFile" accept="image/*" 
+                               onchange="handleEditImageUpload(event)" class="file-input">
+                        <label for="editImageFile" class="file-label">
+                            📷 Seleccionar imagen...
+                        </label>
+                        <div class="image-preview" id="editImagePreview" style="display: none;">
+                            <img id="editPreviewImage" alt="Vista previa">
+                            <button type="button" onclick="removeEditImage()" class="remove-image-btn">
+                                ×
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditSessionModal()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-icon">💾</span>
+                        Actualizar Sesión
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/admin.js"></script>
+    <script>
+        // Variables globales para imagen en admin
+        let editImageData = null;
+        
+        // Función para manejar la subida de imagen en edición
+        function handleEditImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editImageData = e.target.result;
+                    console.log('🖼️ Imagen cargada en admin:', editImageData ? 'Presente' : 'No presente');
+                    showEditImagePreview(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Función para mostrar vista previa de imagen
+        function showEditImagePreview(imageSrc) {
+            const preview = document.getElementById('editImagePreview');
+            const previewImg = document.getElementById('editPreviewImage');
+            
+            if (preview && previewImg) {
+                previewImg.src = imageSrc;
+                preview.style.display = 'block';
+            }
+        }
+        
+        // Función para expandir imagen (disponible globalmente)
+        function expandImage(imageSrc) {
+            if (!imageSrc) {
+                console.log('⚠️ No hay imagen para expandir');
+                return;
+            }
+            
+            const modal = document.createElement('div');
+            modal.className = 'image-expanded';
+            modal.innerHTML = `
+                <img src="${imageSrc}" alt="Imagen expandida" style="cursor: default;">
+                <button onclick="this.parentElement.remove()" style="
+                    position: absolute;
+                    top: 20px;
+                    right: 20px;
+                    background: rgba(0,0,0,0.7);
+                    color: white;
+                    border: none;
+                    padding: 10px;
+                    border-radius: 50%;
+                    font-size: 24px;
+                    cursor: pointer;
+                    width: 40px;
+                    height: 40px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10001;
+                ">×</button>
+            `;
+            
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            };
+            
+            document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
+            
+            modal.addEventListener('remove', () => {
+                document.body.style.overflow = 'auto';
+            });
+        }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check admin access
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (!currentUser.role || currentUser.role !== 'admin') {
+                alert('Acceso denegado. Solo administradores pueden acceder a este panel.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            admin.init();
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleDateString('es-ES');
+        });
+    </script>
+    <script>
+        // Función global para cerrar modal de vista de sesión
+        function closeViewSessionModal() {
+            const modal = document.getElementById('viewSessionModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+    </script>
+</body>
+</html>
