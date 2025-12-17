@@ -2,20 +2,22 @@
   "name": "Portal Atlético de Madrid - Entrenamiento de Porteros",
   "short_name": "Portal ATM",
   "description": "Aplicación de gestión de sesiones de entrenamiento para porteros del Atlético de Madrid",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#CE1126",
   "orientation": "portrait-primary",
-  "scope": "/",
+  "scope": "./",
   "icons": [
     {
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "type": "image/x-icon",
+      "purpose": "any"
     }
   ],
   "categories": ["sports", "education", "productivity"],
   "lang": "es",
-  "dir": "ltr"
+  "dir": "ltr",
+  "prefer_related_applications": false
 }
